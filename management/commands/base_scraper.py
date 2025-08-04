@@ -13,7 +13,8 @@ chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
 chrome_options.add_experimental_option("useAutomationExtension", False)
 # Актуальный User-Agent (проверьте свою версию Chrome в chrome://settings/help)
 chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-
+# user_agents = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)..."]
+# chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
 # Дополнительные заголовки
 chrome_options.add_argument("accept-language=en-US,en;q=0.9")
 chrome_options.add_argument("referer=https://www.google.com/")
@@ -31,7 +32,7 @@ try:
 
     # Поиск товаров
     search_box = driver.find_element(By.ID, "twotabsearchtextbox")
-    search_box.send_keys("laptops")
+    # search_box.send_keys("laptops")
     search_box.submit()
     time.sleep(random.uniform(3, 5))
 
@@ -53,7 +54,7 @@ try:
 
         try:
             # Цена ($148.98 -> 148.98)
-            price = product.find_element(By.CSS_SELECTOR, ".a-price .a-offscreen").get_attribute("textContent").replace("$", "")
+            price = product.find_element(By.CSS_SELECTOR, "span.a-color-base").get_attribute("textContent").replace("$", "")
         except:
             price = "N/A"
 
@@ -68,11 +69,18 @@ try:
             reviews = product.find_element(By.CSS_SELECTOR, "span.a-size-base.s-underline-text").text
         except:
             reviews = "N/A"
-
+        try:
+            # Получаем элемент ссылки
+            link_element = product.find_element(By.CSS_SELECTOR, "a.a-button-text")
+            # Извлекаем атрибут href
+            relative_url = link_element.get_attribute("href")
+        except:
+            relative_url = "N/A"
         print(f"Title: {title}")
         print(f"Price: ${price}")
         print(f"Rating: {rating}")
         print(f"Reviews: {reviews}")
+        print(f"URL: {relative_url}")
         print("-" * 50)
 
 finally:
