@@ -1,0 +1,19 @@
+#django
+media/
+staticfiles/
+#vs code
+.vscode
+.env
+db.sqlite3
+media/
+*.zip
+/venv
+*.sqlite3
+*.pyc
+__pycache__
+*.psd
+*.zip
+.DS_Store
+/tmp
+/pip-cache
+scrapper
