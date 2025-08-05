@@ -1,11 +1,16 @@
-Amazon Web Scraping with Selenium and Django
+Amazon Web Scraping with Selenium and Django.
+
 This Python script allows you to scrape product information from Amazon product pages using Selenium. The scraped data is then saved to Django’s basic SQLite database.
+
 Prerequisites
+
 Before running the script, make sure you have the following installed:
 •	Python (version 3.x)
 •	Chrome WebDriver (ensure it matches your Chrome browser version)
 You'll also need to install the required Python packages listed in the requirements.txt file.
+
 Installation
+
 1.	Clone this repository to your local machine:
 git clone https://github.com/ParanoyaFobios/test_task
 Install the required Python packages:
