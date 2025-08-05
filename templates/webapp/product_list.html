@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Amazon Laptops</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Price</th>
+            <th>Rating</th>
+            <th>Reviews</th>
+            <th>Link</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in products %}
+        <tr>
+            <td>{{ product.title|truncatechars:100 }}</td>
+            <td>${{ product.current_price }}</td>
+            <td>{{ product.rating }}</td>
+            <td>{{ product.reviews }}</td>
+            <td><a href="{{ product.product_url }}" target="_blank">View on Amazon</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

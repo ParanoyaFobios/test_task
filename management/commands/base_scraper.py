@@ -10,11 +10,34 @@ import random
 chrome_options = Options()
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+# chrome_options.add_argument("--headless")  # Фоновый режим (без открытия окна)
 chrome_options.add_experimental_option("useAutomationExtension", False)
-# Актуальный User-Agent (проверьте свою версию Chrome в chrome://settings/help)
-chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-# user_agents = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)..."]
-# chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
+user_agents = [
+    # Chrome (Windows)
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    
+    # Chrome (macOS)
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    
+    # Firefox (Windows)
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
+    
+    # Safari (Mac)
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15",
+    
+    # Edge (Windows)
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+    
+    # Chrome (Linux)
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    
+    # Firefox (Mac)
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0",
+    
+    # Opera (Windows)
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+]
+chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
 # Дополнительные заголовки
 chrome_options.add_argument("accept-language=en-US,en;q=0.9")
 chrome_options.add_argument("referer=https://www.google.com/")
@@ -22,27 +45,24 @@ chrome_options.add_argument("--disable-notifications")
 chrome_options.add_argument("--disable-gpu")
 
 driver = webdriver.Chrome(options=chrome_options)
+# Имитируем поведение человека
+driver.get("https://www.google.com")
+time.sleep(random.uniform(1, 3))
+driver.get("https://www.amazon.com/s?k=laptops")
+time.sleep(random.uniform(2, 4))
+# Поиск товаров
+search_box = driver.find_element(By.ID, "twotabsearchtextbox")
+# search_box.send_keys("laptops")
+search_box.submit()
+time.sleep(random.uniform(3, 5))
 
 try:
-    # Имитируем поведение человека
-    driver.get("https://www.google.com")
-    time.sleep(random.uniform(1, 3))
-    driver.get("https://www.amazon.com/s?k=laptops")
-    time.sleep(random.uniform(2, 4))
-
-    # Поиск товаров
-    search_box = driver.find_element(By.ID, "twotabsearchtextbox")
-    # search_box.send_keys("laptops")
-    search_box.submit()
-    time.sleep(random.uniform(3, 5))
-
     # Прокрутка и парсинг (селекторы из предыдущего ответа)
     driver.execute_script("window.scrollBy(0, 1000);")
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-asin]:not([data-asin=''])"))
     )
 
-    # Парсим первые 5 товаров
     products = driver.find_elements(By.CSS_SELECTOR, "div[data-asin]:not([data-asin=''])")[:2]
     
     for product in products:
