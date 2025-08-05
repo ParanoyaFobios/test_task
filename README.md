@@ -11,10 +11,13 @@ You'll also need to install the required Python packages listed in the requireme
 
 Installation
 
-1.	Clone this repository to your local machine:
+Clone this repository to your local machine:
 git clone https://github.com/ParanoyaFobios/test_task
+
 Install the required Python packages:
+
 pip install -r requirements.txt
+
 First start
 1.	Make sure you are in the directory with the manage.py file.
 2.	Prepare the database and superuser with the following commands:
