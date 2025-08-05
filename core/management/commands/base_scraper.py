@@ -63,7 +63,7 @@ def scrape_amazon():
         
         # Ожидание загрузки
         WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-asin]:not([data-asin=''])"))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div.s-result-item[data-component-type='s-search-result']"))
         )
         
         # Прокрутка
@@ -72,7 +72,7 @@ def scrape_amazon():
             time.sleep(random.uniform(1, 2))
         
         # Парсинг
-        products = driver.find_elements(By.CSS_SELECTOR, "div[data-asin]:not([data-asin=''])")[:3]
+        products = driver.find_elements(By.CSS_SELECTOR, "div.s-result-item[data-component-type='s-search-result']")[:3]
         
         for product in products:
             try:
@@ -86,21 +86,21 @@ def scrape_amazon():
                 
                 # Название
                 try:
-                    title_elem = product.find_element(By.CSS_SELECTOR, "h2 a span")
+                    title_elem = product.find_element(By.CSS_SELECTOR, "h2 a.a-link-normal.a-text-normal")
                     data['title'] = title_elem.text.strip()
                 except NoSuchElementException:
                     pass
                 
                 # Цена
                 try:
-                    price_elem = product.find_element(By.CSS_SELECTOR, ".a-price .a-offscreen")
+                    price_elem = product.find_element(By.CSS_SELECTOR, "span.a-price span.a-offscreen")
                     data['price'] = price_elem.get_attribute("textContent").strip()
                 except NoSuchElementException:
                     pass
                 
                 # Рейтинг
                 try:
-                    rating_elem = product.find_element(By.CSS_SELECTOR, "i.a-icon-star-small .a-icon-alt")
+                    rating_elem = product.find_element(By.CSS_SELECTOR, "span.a-icon-alt")
                     data['rating'] = rating_elem.get_attribute("textContent").strip()
                 except NoSuchElementException:
                     pass
@@ -114,7 +114,7 @@ def scrape_amazon():
                 
                 # URL
                 try:
-                    url_elem = product.find_element(By.CSS_SELECTOR, "h2 a")
+                    url_elem = product.find_element(By.CSS_SELECTOR, "h2 a.a-link-normal.a-text-normal")
                     data['url'] = url_elem.get_attribute("href")
                 except NoSuchElementException:
                     pass

@@ -7,6 +7,7 @@ from django.core.management import call_command
 from threading import Thread
 from django.views.decorators.csrf import csrf_exempt
 from django.db import models
+import json
 
 def product_list(request):
     products = Product.objects.all()
@@ -25,16 +26,19 @@ def control_panel(request):
 
 
 
-@csrf_exempt  # Временно для тестов, в production используйте правильную CSRF защиту
+@csrf_exempt
 @require_POST
 def run_scraper(request):
     try:
-        # Запускаем в отдельном потоке
+        data = json.loads(request.body)
+        category = data.get('category', 'laptops')  # По умолчанию 'laptops'
+        
+        # Запускаем в отдельном потоке с передачей категории
         def run_command():
-            call_command('scrape_amazon')
+            call_command('scrape_amazon', category=category)
         
         Thread(target=run_command).start()
-        return JsonResponse({'status': 'Парсинг запущен'})
+        return JsonResponse({'status': f'Парсинг категории "{category}" запущен'})
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

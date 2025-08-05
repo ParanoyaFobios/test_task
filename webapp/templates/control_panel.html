@@ -7,7 +7,13 @@
     <div class="card mt-3">
         <div class="card-body">
             <h5 class="card-title">Запуск парсера</h5>
-            <p class="card-text">Нажмите кнопку ниже для запуска процесса сбора данных</p>
+            <p class="card-text">Введите категорию для поиска и нажмите кнопку для запуска</p>
+            
+            <div class="form-group mb-3">
+                <label for="categoryInput">Категория для поиска:</label>
+                <input type="text" class="form-control" id="categoryInput" 
+                       placeholder="Например: laptops, kitchen and dining" value="laptops">
+            </div>
             
             <button id="runScraperBtn" class="btn btn-primary">
                 <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
@@ -24,8 +30,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const btn = document.getElementById('runScraperBtn');
     const spinner = document.getElementById('spinner');
     const statusMsg = document.getElementById('statusMessage');
+    const categoryInput = document.getElementById('categoryInput');
     
     btn.addEventListener('click', async function() {
+        const category = categoryInput.value.trim();
+        if (!category) {
+            statusMsg.textContent = 'Пожалуйста, введите категорию для поиска';
+            statusMsg.className = 'mt-3 alert alert-warning';
+            statusMsg.style.display = 'block';
+            return;
+        }
+        
         btn.disabled = true;
         spinner.classList.remove('d-none');
         statusMsg.style.display = 'none';
@@ -37,7 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRFToken': '{{ csrf_token }}',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({})
+                body: JSON.stringify({
+                    category: category
+                })
             });
             
             const data = await response.json();

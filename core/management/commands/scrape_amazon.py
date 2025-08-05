@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -8,20 +8,28 @@ from webapp.models import Product
 import time
 import random
 from decimal import Decimal
-from core.management.user_agents import user_agents  # Импортируем список user_agents
+from core.management.user_agents import user_agents
 
 class Command(BaseCommand):
     help = 'Scrape Amazon laptops data'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--category',
+            type=str,
+            default='laptops',
+            help='Category to search on Amazon'
+        )
+
     def handle(self, *args, **options):
-        # Ваш текущий код парсера с изменениями:
+        category = options['category']
+        search_query = category.replace(' ', '+')
         chrome_options = Options()
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        # chrome_options.add_argument("--headless")  # Фоновый режим (без открытия окна)
+        # chrome_options.add_argument("--headless")
         chrome_options.add_experimental_option("useAutomationExtension", False)
         chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
-        # Дополнительные заголовки
         chrome_options.add_argument("accept-language=en-US,en;q=0.9")
         chrome_options.add_argument("referer=https://www.google.com/")
         chrome_options.add_argument("--disable-notifications")
@@ -29,83 +37,99 @@ class Command(BaseCommand):
         
         try:
             driver = webdriver.Chrome(options=chrome_options)
-            # Имитируем поведение человека
             driver.get("https://www.google.com")
             time.sleep(random.uniform(1, 3))
-            driver.get("https://www.amazon.com/s?k=laptops")
+            driver.get(f"https://www.amazon.com/s?k={search_query}")
             time.sleep(random.uniform(2, 4))
             
-            # Прокрутка и парсинг
             driver.execute_script("window.scrollBy(0, 1000);")
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-asin]:not([data-asin=''])")))
             
-            # собираем первые 3 товара
             products = driver.find_elements(By.CSS_SELECTOR, "div.s-result-item[data-component-type='s-search-result']")[:16]
             
             for product in products:
-                # Инициализация данных
                 product_data = {
                     'title': 'N/A',
-                    'price': 'N/A',
-                    'rating': 'N/A',
-                    'reviews': 'N/A',
-                    'url': 'N/A'
+                    'current_price': Decimal('0'),
+                    'rating': None,
+                    'reviews': None,
+                    'product_url': None
                 }
                 
                 # Название товара
                 try:
-                    title_element = product.find_element(By.CSS_SELECTOR, "h2 a.a-link-normal.a-text-normal")
+                    title_element = product.find_element(By.CSS_SELECTOR, "h2.a-size-medium.a-spacing-none.a-color-base.a-text-normal span")
                     product_data['title'] = title_element.text.strip()
-                except:
-                    pass
-                
+                    self.stdout.write(f"Found title: {product_data['title']}")
+                except Exception as e:
+                    self.stdout.write(f"Error getting title: {str(e)}")
                 # Цена
                 try:
-                    price_text = product.find_element(By.CSS_SELECTOR, "span.a-price span.a-offscreen").get_attribute("textContent")
-                    product_data['price'] = Decimal(price_text.replace('$', '').strip())
+                    price_element = product.find_element(By.CSS_SELECTOR, "span.a-price-whole")
+                    price_fraction = product.find_element(By.CSS_SELECTOR, "span.a-price-fraction").text
+                    price_text = f"{price_element.text}.{price_fraction}"
+                    product_data['current_price'] = Decimal(price_text)
                 except:
-                    product_data['price'] = Decimal('0') # Если цена не найдена, устанавливаем 0
+                    try:
+                        price_text = product.find_element(By.CSS_SELECTOR, "span.a-offscreen").get_attribute("textContent")
+                        product_data['current_price'] = Decimal(price_text.replace('$', '').strip())
+                    except Exception as e:
+                        self.stdout.write(f"Error getting price: {str(e)}")
                 
                 # Рейтинг
                 try:
                     rating_element = product.find_element(By.CSS_SELECTOR, "span.a-icon-alt")
-                    product_data['rating'] = rating_element.get_attribute("textContent").strip()
-                except:
-                    pass
+                    rating_text = rating_element.get_attribute("textContent")
+                    product_data['rating'] = float(rating_text.split()[0])
+                except Exception as e:
+                    self.stdout.write(f"Error getting rating: {str(e)}")
                 
                 # Количество отзывов
                 try:
                     reviews_element = product.find_element(By.CSS_SELECTOR, "span.a-size-base.s-underline-text")
-                    product_data['reviews'] = reviews_element.text.strip()
-                except:
-                    pass
+                    reviews_text = reviews_element.text.replace(',', '')
+                    if reviews_text.isdigit():
+                        product_data['reviews'] = int(reviews_text)
+                except Exception as e:
+                    self.stdout.write(f"Error getting reviews: {str(e)}")
                 
-                # Ссылка на товар
+                # Ссылка на товар из блока выбора цвета (swatch)
                 try:
-                    url_element = product.find_element(By.CSS_SELECTOR, "h2 a.a-link-normal.a-text-normal")
-                    product_data['url'] = url_element.get_attribute("href")
-                except:
-                    pass
+                    url_element = product.find_element(By.CSS_SELECTOR, "h2 > a.a-link-normal")
+                    product_url = url_element.get_attribute("href")
+                    if product_url:
+                        if not product_url.startswith('http'):
+                            product_url = f"https://www.amazon.com{product_url}"
+                        product_data['product_url'] = product_url
+                        self.stdout.write(f"Found URL: {product_url}")
+                except Exception as e:
+                    self.stdout.write(f"Error getting URL from swatch link: {str(e)}")
+
                 
-                # Создаем или обновляем запись в БД
-                if product_data['url'] != 'N/A':
-                    Product.objects.update_or_create(
-                        product_url=product_data['url'],
-                        defaults={
-                            'title': product_data['title'],
-                            'current_price': product_data['price'],
-                            'rating': product_data['rating'],
-                            'reviews': product_data['reviews']
-                        }
-                    )
-                    
-                    self.stdout.write(self.style.SUCCESS(f'Successfully saved: {product_data["title"]}'))
-                
+                # Сохранение в БД
+                if product_data['product_url']:  # Проверяем на наличие любого URL
+                    try:
+                        Product.objects.update_or_create(
+                            product_url=product_data['product_url'],
+                            defaults={
+                                'title': product_data['title'],
+                                'current_price': product_data['current_price'],
+                                'rating': product_data['rating'],
+                                'reviews': product_data['reviews']
+                            }
+                        )
+                        self.stdout.write(self.style.SUCCESS(f'Successfully saved: {product_data["title"]}'))
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f'Error saving to DB: {str(e)}'))
+                else:
+                    self.stdout.write(self.style.WARNING('Skipped product - no URL found'))
+            
+            self.stdout.write(self.style.SUCCESS('Scraping completed successfully'))
+            
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Error during scraping: {e}'))
+            self.stdout.write(self.style.ERROR(f'Error during scraping: {str(e)}'))
             
         finally:
             driver.quit()
-            # В management командах нельзя использовать redirect, так как это не HTTP-запрос
-            self.stdout.write(self.style.SUCCESS('Scraping completed'))
+            self.stdout.write(self.style.SUCCESS('Scraping process finished.'))
