@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Управление парсером Amazon</h2>
+    
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">Запуск парсера</h5>
+            <p class="card-text">Нажмите кнопку ниже для запуска процесса сбора данных</p>
+            
+            <button id="runScraperBtn" class="btn btn-primary">
+                <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                Запустить парсер
+            </button>
+            
+            <div id="statusMessage" class="mt-3 alert" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('runScraperBtn');
+    const spinner = document.getElementById('spinner');
+    const statusMsg = document.getElementById('statusMessage');
+    
+    btn.addEventListener('click', async function() {
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+        statusMsg.style.display = 'none';
+        
+        try {
+            const response = await fetch('{% url "run_scraper" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+            
+            const data = await response.json();
+            
+            if (data.status) {
+                statusMsg.textContent = data.status;
+                statusMsg.className = 'mt-3 alert alert-success';
+            } else if (data.error) {
+                statusMsg.textContent = 'Ошибка: ' + data.error;
+                statusMsg.className = 'mt-3 alert alert-danger';
+            }
+            
+        } catch (error) {
+            statusMsg.textContent = 'Ошибка сети: ' + error;
+            statusMsg.className = 'mt-3 alert alert-danger';
+        } finally {
+            statusMsg.style.display = 'block';
+            spinner.classList.add('d-none');
+            setTimeout(() => {
+                btn.disabled = false;
+            }, 10000); // Блокировка кнопки на 10 секунд
+        }
+    });
+});
+</script>
+{% endblock %}
