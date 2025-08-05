@@ -7,12 +7,23 @@
     <div class="card mt-3">
         <div class="card-body">
             <h5 class="card-title">Запуск парсера</h5>
-            <p class="card-text">Введите категорию для поиска и нажмите кнопку для запуска</p>
+            <p class="card-text">Введите параметры для поиска:</p>
             
             <div class="form-group mb-3">
                 <label for="categoryInput">Категория для поиска:</label>
                 <input type="text" class="form-control" id="categoryInput" 
                        placeholder="Например: laptops, kitchen and dining" value="laptops">
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="pagesSelect">Количество страниц (1-5):</label>
+                <select class="form-control" id="pagesSelect">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
             </div>
             
             <button id="runScraperBtn" class="btn btn-primary">
@@ -31,9 +42,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const spinner = document.getElementById('spinner');
     const statusMsg = document.getElementById('statusMessage');
     const categoryInput = document.getElementById('categoryInput');
+    const pagesSelect = document.getElementById('pagesSelect');
     
     btn.addEventListener('click', async function() {
         const category = categoryInput.value.trim();
+        const pages = pagesSelect.value;
+        
         if (!category) {
             statusMsg.textContent = 'Пожалуйста, введите категорию для поиска';
             statusMsg.className = 'mt-3 alert alert-warning';
@@ -53,7 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    category: category
+                    category: category,
+                    pages: pages
                 })
             });
             

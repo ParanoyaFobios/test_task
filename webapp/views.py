@@ -31,14 +31,18 @@ def control_panel(request):
 def run_scraper(request):
     try:
         data = json.loads(request.body)
-        category = data.get('category', 'laptops')  # По умолчанию 'laptops'
+        category = data.get('category', 'laptops')
+        pages = int(data.get('pages', 1))
         
-        # Запускаем в отдельном потоке с передачей категории
+        # Валидация количества страниц
+        if pages < 1 or pages > 5:
+            return JsonResponse({'error': 'Количество страниц должно быть от 1 до 5'}, status=400)
+        
         def run_command():
-            call_command('scrape_amazon', category=category)
+            call_command('scrape_amazon', category=category, pages=pages)
         
         Thread(target=run_command).start()
-        return JsonResponse({'status': f'Парсинг категории "{category}" запущен'})
+        return JsonResponse({'status': f'Парсинг категории "{category}" ({pages} страниц) запущен'})
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

@@ -15,7 +15,7 @@
     <tbody>
         {% for product in products %}
         <tr>
-            <td>{{ product.title|truncatechars:100 }}</td>
+            <td>{{ product.title }}</td>
             <td>${{ product.current_price }}</td>
             <td>{{ product.rating }}</td>
             <td>{{ product.reviews }}</td>

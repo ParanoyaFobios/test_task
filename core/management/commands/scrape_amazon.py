@@ -20,10 +20,17 @@ class Command(BaseCommand):
             default='laptops',
             help='Category to search on Amazon'
         )
+        parser.add_argument(
+            '--pages',
+            type=int,
+            default=1,
+            help='Number of pages to parse (1-5)'
+        )
 
     def handle(self, *args, **options):
         category = options['category']
         search_query = category.replace(' ', '+')
+        pages_to_parse = min(max(1, options['pages']), 5)
         chrome_options = Options()
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -39,14 +46,22 @@ class Command(BaseCommand):
             driver = webdriver.Chrome(options=chrome_options)
             driver.get("https://www.google.com")
             time.sleep(random.uniform(1, 3))
-            driver.get(f"https://www.amazon.com/s?k={search_query}")
-            time.sleep(random.uniform(2, 4))
-            
-            driver.execute_script("window.scrollBy(0, 1000);")
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-asin]:not([data-asin=''])")))
-            
-            products = driver.find_elements(By.CSS_SELECTOR, "div.s-result-item[data-component-type='s-search-result']")[:16]
+            for page in range(1, pages_to_parse + 1):
+                if page == 1:
+                    url = f"https://www.amazon.com/s?k={search_query}"
+                else:
+                    url = f"https://www.amazon.com/s?k={search_query}&page={page}"
+                
+                self.stdout.write(f"Парсинг страницы {page}...")
+                driver.get(url)
+                time.sleep(random.uniform(2, 4))
+ 
+                for _ in range(3):  # 3 прокрутки для полной загрузки
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(random.uniform(1.5, 3.5))
+                # Ждем, пока элементы загрузятся
+                products = driver.find_elements(By.CSS_SELECTOR, "div.s-result-item[data-component-type='s-search-result']")
+                self.stdout.write(f"Найдено {len(products)} товаров на странице {page}")
             
             for product in products:
                 product_data = {
@@ -108,8 +123,8 @@ class Command(BaseCommand):
 
                 
                 # Сохранение в БД
-                if product_data['product_url']:  # Проверяем на наличие любого URL
-                    try:
+                try:
+                    if product_data['product_url']:  # Если есть URL
                         Product.objects.update_or_create(
                             product_url=product_data['product_url'],
                             defaults={
@@ -119,14 +134,27 @@ class Command(BaseCommand):
                                 'reviews': product_data['reviews']
                             }
                         )
-                        self.stdout.write(self.style.SUCCESS(f'Successfully saved: {product_data["title"]}'))
-                    except Exception as e:
-                        self.stdout.write(self.style.ERROR(f'Error saving to DB: {str(e)}'))
-                else:
-                    self.stdout.write(self.style.WARNING('Skipped product - no URL found'))
+                        self.stdout.write(self.style.SUCCESS(f'Saved: {product_data["title"]}'))
+                    else:
+                        # Если нет URL, создаем новую запись без проверки
+                        Product.objects.create(
+                            title=product_data['title'],
+                            current_price=product_data['current_price'],
+                            rating=product_data['rating'],
+                            reviews=product_data['reviews'],
+                            product_url=product_data['product_url']
+                        )
+                        self.stdout.write(self.style.SUCCESS(f'Created new: {product_data["title"]}'))
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f'DB Error: {str(e)}'))
+                                    # Пауза между страницами (случайная)
+                if page < pages_to_parse:
+                    delay = random.uniform(5, 10)
+                    self.stdout.write(f"Ожидание {delay:.1f} сек перед следующей страницей...")
+                    time.sleep(delay)
             
-            self.stdout.write(self.style.SUCCESS('Scraping completed successfully'))
-            
+            self.stdout.write(self.style.SUCCESS(f'Успешно обработано {pages_to_parse} страниц'))
+                        
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error during scraping: {str(e)}'))
             
