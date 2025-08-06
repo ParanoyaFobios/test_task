@@ -10,6 +10,7 @@ import random
 from decimal import Decimal
 from core.management.user_agents import user_agents
 
+
 class Command(BaseCommand):
     help = 'Scrape Amazon laptops data'
 
@@ -81,13 +82,11 @@ class Command(BaseCommand):
                     self.stdout.write(f"Error getting title: {str(e)}")
                 # Цена
                 try:
-                    price_element = product.find_element(By.CSS_SELECTOR, "span.a-price-whole")
-                    price_fraction = product.find_element(By.CSS_SELECTOR, "span.a-price-fraction").text
-                    price_text = f"{price_element.text}.{price_fraction}"
-                    product_data['current_price'] = Decimal(price_text)
+                    price_element = product.find_element(By.CSS_SELECTOR, "span.a-color-base")
+                    product_data['current_price'] = Decimal(price_element.text.replace('$', '').strip())
                 except:
                     try:
-                        price_text = product.find_element(By.CSS_SELECTOR, "span.a-offscreen").get_attribute("textContent")
+                        price_text = product.find_element(By.CSS_SELECTOR, "span.a-price[data-a-size='xl'] span.a-offscreen")
                         product_data['current_price'] = Decimal(price_text.replace('$', '').strip())
                     except Exception as e:
                         self.stdout.write(f"Error getting price: {str(e)}")
@@ -109,9 +108,9 @@ class Command(BaseCommand):
                 except Exception as e:
                     self.stdout.write(f"Error getting reviews: {str(e)}")
                 
-                # Ссылка на товар из блока выбора цвета (swatch)
+                # Ссылка на товар
                 try:
-                    url_element = product.find_element(By.CSS_SELECTOR, "h2 > a.a-link-normal")
+                    url_element = product.find_element(By.CSS_SELECTOR, "a.a-link-normal.s-line-clamp-2.s-link-style.a-text-normal")
                     product_url = url_element.get_attribute("href")
                     if product_url:
                         if not product_url.startswith('http'):

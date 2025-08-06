@@ -17,3 +17,4 @@ __pycache__
 /tmp
 /pip-cache
 scrapper
+db.sqlite3

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Amazon Laptops</h1>
+<h1>Amazon products</h1>
 <table class="table">
     <thead>
         <tr>
@@ -10,6 +10,7 @@
             <th>Rating</th>
             <th>Reviews</th>
             <th>Link</th>
+            <th>Parsred At</th>
         </tr>
     </thead>
     <tbody>
@@ -20,6 +21,7 @@
             <td>{{ product.rating }}</td>
             <td>{{ product.reviews }}</td>
             <td><a href="{{ product.product_url }}" target="_blank">View on Amazon</a></td>
+            <td>{{ product.created_at }}</td>
         </tr>
         {% endfor %}
     </tbody>
