@@ -15,7 +15,7 @@ def product_list(request):
 
 def analytics(request):
     # Простая аналитика - средняя цена товаров с рейтингом > 4
-    high_rated_avg = Product.objects.filter(rating__gt=4).aggregate(models.Avg('current_price'))
+    high_rated_avg = Product.objects.filter(rating__gte=4).aggregate(models.Avg('current_price'))
     context = {
         'high_rated_avg': high_rated_avg['current_price__avg']
     }
